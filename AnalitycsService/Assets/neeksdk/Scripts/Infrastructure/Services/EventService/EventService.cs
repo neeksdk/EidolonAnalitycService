@@ -21,7 +21,7 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService
         private bool _eventsIsSending;
 
         private Events _storedEvents = new Events();
-        private readonly Events _sendingEvents = new Events();
+        private Events _sendingEvents = new Events();
 
         public void TrackEvent(string type, string data) =>
             _storedEvents.events.Add(new EventData.EventData() { type = type, data = data });
@@ -36,7 +36,7 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService
                 yield break;
             }
             
-            _sendingEvents.events = _storedEvents.events;
+            _sendingEvents.events.AddRange(_storedEvents.events);
             _storedEvents.events.Clear();
 
             SendPostRequest();
@@ -93,7 +93,7 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService
 
         private void Start()
         {
-            if (_loadDataService.TryToLoadData<Events>(SAVE_EVENT_DATA_FILENAME, out Events events))
+            if (_loadDataService.TryToLoadData(SAVE_EVENT_DATA_FILENAME, out Events events))
             {
                 _storedEvents = events;
             }
@@ -108,9 +108,6 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService
             StopAllCoroutines();
 
         private void OnDestroy() =>
-            QuitService();
-
-        private void OnApplicationQuit() =>
             QuitService();
 
         private void QuitService()

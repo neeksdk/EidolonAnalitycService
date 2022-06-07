@@ -10,7 +10,7 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService.EventData
     }
 
     [Serializable]
-    public class EventData
+    public struct EventData
     {
         public string type;
         public string data;

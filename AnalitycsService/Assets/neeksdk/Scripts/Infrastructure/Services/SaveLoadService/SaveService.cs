@@ -16,7 +16,7 @@ namespace neeksdk.Scripts.Infrastructure.Services.SaveLoadService
                 ? File.OpenWrite(savePath) 
                 : File.Create(savePath);
             
-            bf.Serialize(file, typeof(T));
+            bf.Serialize(file, data);
             file.Close();
         }
     }
