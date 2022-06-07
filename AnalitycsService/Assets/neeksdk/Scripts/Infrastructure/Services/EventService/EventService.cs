@@ -6,6 +6,11 @@ using neeksdk.Scripts.Infrastructure.Services.SaveLoadService;
 using UnityEngine;
 using UnityEngine.Networking;
 
+#if UNITY_EDITOR
+using UnityEditor;
+using System.IO;
+#endif
+
 namespace neeksdk.Scripts.Infrastructure.Services.EventService
 {
     public class EventService : MonoBehaviour
@@ -133,5 +138,13 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService
             Debug.Log($" --------------------------------------------------------------");
             Debug.Log($" ");
         }
+        
+#if UNITY_EDITOR
+        [MenuItem("Eidolon/Event service clear saved data")]
+        public static void ClearSaveData() {
+            string saveFilePath = Path.Combine(Application.persistentDataPath, SAVE_EVENT_DATA_FILENAME);
+            File.Delete(saveFilePath);
+        }
     }
+#endif
 }
