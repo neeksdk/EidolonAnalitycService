@@ -599,11 +599,11 @@ GameObject:
   m_Component:
   - component: {fileID: 1945612414}
   - component: {fileID: 1945612418}
+  - component: {fileID: 1945612415}
   - component: {fileID: 1945612417}
   - component: {fileID: 1945612416}
-  - component: {fileID: 1945612415}
   m_Layer: 5
-  m_Name: Button
+  m_Name: SendAnalyticsButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -642,6 +642,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   EventService: {fileID: 1629567443}
+  type: levelStart
+  data: level:3
 --- !u!114 &1945612416
 MonoBehaviour:
   m_ObjectHideFlags: 0

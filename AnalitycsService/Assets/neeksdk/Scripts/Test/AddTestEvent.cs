@@ -6,8 +6,10 @@ namespace neeksdk.Scripts.Test
     public class AddTestEvent : MonoBehaviour
     {
         public EventService EventService;
+        public string type = "levelStart";
+        public string data = "level:3";
 
         public void SendTestEvent() =>
-            EventService.TrackEvent("levelStart", "level:3");
+            EventService.TrackEvent(type, data);
     }
 }
