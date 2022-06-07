@@ -26,7 +26,7 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService
         private bool _eventsIsSending;
 
         private Events _storedEvents = new Events();
-        private Events _sendingEvents = new Events();
+        private int _sendingEventsCount;
 
         public void TrackEvent(string type, string data) =>
             _storedEvents.events.Add(new EventData.EventData() { type = type, data = data });
@@ -35,14 +35,13 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService
         {
             yield return new WaitForSeconds(cooldownBeforeSend);
 
+            _saveDataService.SaveData(_storedEvents, SAVE_EVENT_DATA_FILENAME);
+            
             if (Application.internetReachability == NetworkReachability.NotReachable || _storedEvents.events.Count == 0)
             {
                 StartCoroutine(SendDataToServer());
                 yield break;
             }
-            
-            _sendingEvents.events.AddRange(_storedEvents.events);
-            _storedEvents.events.Clear();
 
             SendPostRequest();
         }
@@ -56,7 +55,8 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService
 
             _eventsIsSending = true;
             
-            string jsonData = JsonUtility.ToJson(_sendingEvents);
+            _sendingEventsCount = _storedEvents.events.Count;
+            string jsonData = JsonUtility.ToJson(_storedEvents);
             byte[] encodedJson = Encoding.UTF8.GetBytes(jsonData);
             
             LogSendingRequest(jsonData);
@@ -70,32 +70,19 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService
             {
                 _eventsIsSending = false;
                 
-                if (postRequest.result == UnityWebRequest.Result.ProtocolError ||
-                    postRequest.result == UnityWebRequest.Result.ConnectionError)
-                {
-                    RestartSendingRequest();
-                }
-                else
+                if (postRequest.result != UnityWebRequest.Result.ProtocolError &&
+                    postRequest.result != UnityWebRequest.Result.ConnectionError)
                 {
                     if (postRequest.responseCode == (long) HttpStatusCode.OK)
                     {
                         postRequest.Dispose();
-                        _sendingEvents.events.Clear();
-                        StartCoroutine(SendDataToServer());
-                    }
-                    else
-                    {
-                        RestartSendingRequest();
+                        _storedEvents.events.RemoveRange(0, _sendingEventsCount);
+                        _saveDataService.SaveData(_storedEvents, SAVE_EVENT_DATA_FILENAME);
                     }
                 }
+                
+                StartCoroutine(SendDataToServer());
             };
-        }
-
-        private void RestartSendingRequest()
-        {
-            _storedEvents.events.AddRange(_sendingEvents.events);
-            _sendingEvents.events.Clear();
-            StartCoroutine(SendDataToServer());
         }
 
         private void Start()
@@ -120,11 +107,6 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService
         private void QuitService()
         {
             StopAllCoroutines();
-            if (_sendingEvents != null && _sendingEvents.events.Count > 0)
-            {
-                _storedEvents.events.AddRange(_sendingEvents.events);
-            }
-            
             _saveDataService.SaveData(_storedEvents, SAVE_EVENT_DATA_FILENAME);
         }
         
