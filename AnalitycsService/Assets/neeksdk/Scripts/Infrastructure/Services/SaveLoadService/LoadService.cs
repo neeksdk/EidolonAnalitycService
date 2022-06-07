@@ -23,6 +23,7 @@ namespace neeksdk.Scripts.Infrastructure.Services.SaveLoadService
                 loadData = (T) bf.Deserialize(loadDataStream);
             } catch (Exception e)
             {
+                Console.WriteLine($" --- failed to load data, file name: {loadFileName}, type: {typeof(T)}, error: {e.Message}");
                 return false;
             }
             
