@@ -1,8 +1,10 @@
 using System.Collections;
-using System.Collections.Generic;
+using System.Net;
+using System.Text;
 using neeksdk.Scripts.Infrastructure.Services.EventService.EventData;
 using neeksdk.Scripts.Infrastructure.Services.SaveLoadService;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace neeksdk.Scripts.Infrastructure.Services.EventService
 {
@@ -16,8 +18,10 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService
         
         private const string SAVE_EVENT_DATA_FILENAME = "event_data.dat";
 
+        private bool _eventsIsSending;
+
         private Events _storedEvents = new Events();
-        private Events _sendingEvents = new Events();
+        private readonly Events _sendingEvents = new Events();
 
         public void TrackEvent(string type, string data) =>
             _storedEvents.events.Add(new EventData.EventData() { type = type, data = data });
@@ -25,12 +29,66 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService
         private IEnumerator SendDataToServer()
         {
             yield return new WaitForSeconds(cooldownBeforeSend);
+
+            if (Application.internetReachability == NetworkReachability.NotReachable || _storedEvents.events.Count == 0)
+            {
+                StartCoroutine(SendDataToServer());
+                yield break;
+            }
             
-            _sendingEvents = _storedEvents;
+            _sendingEvents.events = _storedEvents.events;
             _storedEvents.events.Clear();
 
-            string jsonData = JsonUtility.ToJson(_sendingEvents);
+            SendPostRequest();
+        }
+
+        private void SendPostRequest()
+        {
+            if (_eventsIsSending)
+            {
+                return;
+            }
+
+            _eventsIsSending = true;
             
+            string jsonData = JsonUtility.ToJson(_sendingEvents);
+            byte[] encodedJson = Encoding.UTF8.GetBytes(jsonData);
+
+            WWWForm formData = new WWWForm();
+            UnityWebRequest postRequest = UnityWebRequest.Post(serverUrl, formData);
+            postRequest.SetRequestHeader("Content-Type", "application/json; charset=UTF-8");
+            postRequest.uploadHandler = new UploadHandlerRaw(encodedJson);
+
+            postRequest.SendWebRequest().completed += operation =>
+            {
+                _eventsIsSending = false;
+                
+                if (postRequest.result == UnityWebRequest.Result.ProtocolError ||
+                    postRequest.result == UnityWebRequest.Result.ConnectionError)
+                {
+                    RestartSendingRequest();
+                }
+                else
+                {
+                    if (postRequest.responseCode == (long) HttpStatusCode.OK)
+                    {
+                        postRequest.Dispose();
+                        _sendingEvents.events.Clear();
+                        StartCoroutine(SendDataToServer());
+                    }
+                    else
+                    {
+                        RestartSendingRequest();
+                    }
+                }
+            };
+        }
+
+        private void RestartSendingRequest()
+        {
+            _storedEvents.events.AddRange(_sendingEvents.events);
+            _sendingEvents.events.Clear();
+            StartCoroutine(SendDataToServer());
         }
 
         private void Start()
@@ -63,7 +121,7 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService
                 _storedEvents.events.AddRange(_sendingEvents.events);
             }
             
-            _saveDataService.SaveData<Events>(_storedEvents, SAVE_EVENT_DATA_FILENAME);
+            _saveDataService.SaveData(_storedEvents, SAVE_EVENT_DATA_FILENAME);
         }
     }
 }
