@@ -53,6 +53,8 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService
             
             string jsonData = JsonUtility.ToJson(_sendingEvents);
             byte[] encodedJson = Encoding.UTF8.GetBytes(jsonData);
+            
+            LogSendingRequest(jsonData);
 
             WWWForm formData = new WWWForm();
             UnityWebRequest postRequest = UnityWebRequest.Post(serverUrl, formData);
@@ -119,6 +121,17 @@ namespace neeksdk.Scripts.Infrastructure.Services.EventService
             }
             
             _saveDataService.SaveData(_storedEvents, SAVE_EVENT_DATA_FILENAME);
+        }
+        
+        private void LogSendingRequest(string jsonData)
+        {
+            Debug.Log($" ");
+            Debug.Log($" --------------------------------------------------------------");
+            Debug.Log($" --- Try to send data to server (timeout {cooldownBeforeSend}):");
+            Debug.Log($" ---    host: {serverUrl}");
+            Debug.Log($" ---    json: {jsonData}");
+            Debug.Log($" --------------------------------------------------------------");
+            Debug.Log($" ");
         }
     }
 }
